@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Analysis Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #e9ecef;
+            display: none;
+        }
+        /* Enhanced Chat Interface Styling */
+        .chat-interface {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 20px;
+            max-width: 70%;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.3s ease forwards;
+        }
+        .message.user {
+            margin-left: auto;
+        }
+        .message-bubble {
+            padding: 12px 15px;
+            border-radius: 18px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .message.user .message-bubble {
+            background-color: #007bff;
+            color: white;
+            border-top-right-radius: 4px;
+        }
+        .message.ai .message-bubble {
+            background-color: white;
+            color: #212529;
+            border-top-left-radius: 4px;
+        }
+        .chat-input-area {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        .chat-input-area .input-group {
+            position: relative;
+        }
+        .chat-input-area .form-control {
+            border-radius: 24px;
+            padding: 12px 50px 12px 20px;
+            border: 1px solid #dee2e6;
+            box-shadow: none;
+            height: 50px;
+        }
+        .chat-input-area .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            border-color: #80bdff;
+        }
+        .btn-send {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-send:hover {
+            background-color: #0069d9;
+        }
+        .typing-animation::after {
+            content: '▋';
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .error-message {
+            margin: 10px 20px;
+            padding: 10px 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border-radius: 8px;
+            display: none;
+            font-size: 14px;
+        }
+        /* Message timestamp styling */
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+            display: block;
+        }
+        .message.user .message-time {
+            text-align: right;
+            color: rgba(255,255,255,0.8);
+        }
+        .message.ai .message-time {
+            text-align: left;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Voice Analysis Dashboard</h1>
+        
+        <div class="row">
+            <!-- Add Known Voice Section -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Add Known Voice</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="addVoiceForm">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Person's Name</label>
+                                <input type="text" class="form-control" id="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="voiceFile1" class="form-label">Voice Recording</label>
+                                <input type="file" class="form-control" id="voiceFile1" accept=".wav" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Add Voice</button>
+                        </form>
+                        <div id="addVoiceResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Match Voice Section -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Match Voice</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="matchVoiceForm">
+                            <div class="mb-3">
+                                <label for="voiceFile2" class="form-label">Upload Voice to Match</label>
+                                <input type="file" class="form-control" id="voiceFile2" accept=".wav" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Match Voice</button>
+                        </form>
+                        <div id="matchVoiceResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detect AI Voice Section -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Detect AI Voice</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="detectAiForm">
+                            <div class="mb-3">
+                                <label for="voiceFile3" class="form-label">Upload Voice to Analyze</label>
+                                <input type="file" class="form-control" id="voiceFile3" accept=".wav" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Detect AI</button>
+                        </form>
+                        <div id="detectAiResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analyze Prompt Panel with improved styling -->
+        <div class="panel-section" id="analyze-prompt-panel">
+            <h2 class="panel-title">Analyze Prompt</h2>
+            <p class="panel-subtitle">Ask a question or analyze text</p>
+            
+            <div class="chat-interface">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message ai">
+                        <div class="message-bubble">
+                            Hello! How can I help you today?
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="error-message" id="errorMessage"></div>
+                
+                <div class="chat-input-area">
+                    <form id="queryForm">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="userInput" placeholder="Type your message..." required>
+                            <button class="btn-send" type="submit">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showResult(elementId, message, isError = false) {
+            const resultBox = document.getElementById(elementId);
+            resultBox.style.display = 'block';
+            resultBox.style.backgroundColor = isError ? '#f8d7da' : '#d4edda';
+            resultBox.style.color = isError ? '#721c24' : '#155724';
+            resultBox.textContent = message;
+        }
+
+        // Add Voice Form Handler
+        document.getElementById('addVoiceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('voiceFile1').files[0]);
+            formData.append('name', document.getElementById('name').value);
+
+            try {
+                const response = await fetch('/add_voice', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                showResult('addVoiceResult', data.success || data.error, !response.ok);
+            } catch (error) {
+                showResult('addVoiceResult', 'An error occurred', true);
+            }
+        });
+
+        // Match Voice Form Handler
+        document.getElementById('matchVoiceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('voiceFile2').files[0]);
+
+            try {
+                const response = await fetch('/match_voice', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                showResult('matchVoiceResult', data.result || data.error, !response.ok);
+            } catch (error) {
+                showResult('matchVoiceResult', 'An error occurred', true);
+            }
+        });
+
+        // Detect AI Form Handler
+        document.getElementById('detectAiForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('voiceFile3').files[0]);
+
+            try {
+                const response = await fetch('/detect_ai', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                showResult('detectAiResult', data.result || data.error, !response.ok);
+            } catch (error) {
+                showResult('detectAiResult', 'An error occurred', true);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -119,3 +119,29 @@ p {
   cursor: pointer;
   font-size: 12px;
 }
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    height: 20px;
+}
+
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    background: #adb5bd;
+    border-radius: 50%;
+    display: inline-block;
+    animation: bounce 1.3s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) { animation-delay: 0s; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+    40% { transform: scale(1); opacity: 1; }
+}

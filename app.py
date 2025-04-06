@@ -9,6 +9,7 @@ import threading
 import time
 import signal
 from HarmContentDetection import check_harmful_content
+from chatbot import ansTheQuery
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Required for flash messages
@@ -97,11 +98,27 @@ def add_voice():
         if not name:
             return jsonify({'error': 'No name provided'}), 400
 
-        if not current_recording or not os.path.exists(current_recording):
-            return jsonify({'error': 'No recording available'}), 400
+        file_path = None
+        
+        # Check if file was uploaded
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+        # Otherwise use the recorded file
+        elif current_recording and os.path.exists(current_recording):
+            file_path = current_recording
+        else:
+            return jsonify({'error': 'No audio file provided'}), 400
 
         # Add voice to database
-        add_friend(voice_db, name, current_recording)
+        add_friend(voice_db, name, file_path)
+        
+        # Clean up the file if it was uploaded
+        if 'file' in request.files and request.files['file'].filename != '':
+            os.remove(file_path)
+            
         return jsonify({'success': f'Voice added successfully for {name}'}), 200
 
     except Exception as e:
@@ -110,11 +127,27 @@ def add_voice():
 @app.route('/match_voice', methods=['POST'])
 def match_voice_route():
     try:
-        if not current_recording or not os.path.exists(current_recording):
-            return jsonify({'error': 'No recording available'}), 400
+        file_path = None
+        
+        # Check if file was uploaded
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+        # Otherwise use the recorded file
+        elif current_recording and os.path.exists(current_recording):
+            file_path = current_recording
+        else:
+            return jsonify({'error': 'No audio file provided'}), 400
 
         # Match the voice
-        result = match_voice(current_recording)
+        result = match_voice(file_path)
+        
+        # Clean up the file if it was uploaded
+        if 'file' in request.files and request.files['file'].filename != '':
+            os.remove(file_path)
+            
         return jsonify({'result': result}), 200
 
     except Exception as e:
@@ -123,12 +156,47 @@ def match_voice_route():
 @app.route('/detect_ai', methods=['POST'])
 def detect_ai():
     try:
-        if not current_recording or not os.path.exists(current_recording):
-            return jsonify({'error': 'No recording available'}), 400
+        file_path = None
+        
+        # Check if file was uploaded
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+        # Otherwise use the recorded file
+        elif current_recording and os.path.exists(current_recording):
+            file_path = current_recording
+        else:
+            return jsonify({'error': 'No audio file provided'}), 400
 
         # Analyze if the voice is AI or real
-        result = analyze_audio(current_recording)
+        result = analyze_audio(file_path)
+        
+        # Clean up the file if it was uploaded
+        if 'file' in request.files and request.files['file'].filename != '':
+            os.remove(file_path)
+            
         return jsonify({'result': result}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/chat')
+def chat():
+    query = request.args.get('query', '')
+    return render_template('chat.html', initial_query=query)
+
+@app.route('/get_ai_response', methods=['POST'])
+def get_ai_response():
+    try:
+        data = request.get_json()
+        if not data or 'text' not in data:
+            return jsonify({'error': 'No text provided'}), 400
+
+        # Get response from AI
+        response = ansTheQuery(data['text'])
+        return jsonify({'response': response}), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
