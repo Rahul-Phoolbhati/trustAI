@@ -11,10 +11,26 @@ client = discovery.build(
   static_discovery=False,
 )
 
-analyze_request = {
-  'comment': { 'text': 'world is beuatiful' },
-  'requestedAttributes': {'PROFANITY': {}, "TOXICITY" : {}, "SEVERE_TOXICITY" :{}, "IDENTITY_ATTACK" : {}, "INSULT" :{}, "THREAT" : {}}
-}
 
-response = client.comments().analyze(body=analyze_request).execute()
-print(json.dumps(response, indent=2))
+
+# response = client.comments().analyze(body=analyze_request).execute()
+# print(json.dumps(response, indent=2))
+
+
+def check_harmful_content(text):
+    analyze_request = {
+        'comment': { 'text': text },
+        'requestedAttributes': {'PROFANITY': {}, "TOXICITY" : {}, "SEVERE_TOXICITY" :{}, "IDENTITY_ATTACK" : {}, "INSULT" :{}, "THREAT" : {}}
+    }
+    try:
+        response = client.comments().analyze(body=analyze_request).execute()
+        print(json.dumps(response, indent=2))
+        threshold = 0.4
+        for attribute, scores in response['attributeScores'].items():
+            if scores['summaryScore']['value'] > threshold:
+                return True, attribute
+        
+        return False, None
+    except Exception as e:
+        print(f"Error checking content: {e}")
+        return False, None

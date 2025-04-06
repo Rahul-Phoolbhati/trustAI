@@ -8,7 +8,7 @@ from Audio.record import record_audio, playback_audio
 import threading
 import time
 import signal
-from googleapiclient import discovery
+from HarmContentDetection import check_harmful_content
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Required for flash messages
@@ -18,43 +18,6 @@ UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Configure Google API
-API_KEY = 'AIzaSyAsXyKV32H990ll4npotKQtx4JGYRWe_8M'
-perspective_client = discovery.build(
-    "commentanalyzer",
-    "v1alpha1",
-    developerKey=API_KEY,
-    discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
-    static_discovery=False,
-)
-
-def check_harmful_content(text):
-    analyze_request = {
-        'comment': {'text': text},
-        'requestedAttributes': {
-            'TOXICITY': {},
-            'SEVERE_TOXICITY': {},
-            'IDENTITY_ATTACK': {},
-            'INSULT': {},
-            'THREAT': {},
-            'PROFANITY': {}
-        }
-    }
-    
-    try:
-        response = perspective_client.comments().analyze(body=analyze_request).execute()
-        
-        # Check if any attribute score is above threshold (0.7)
-        threshold = 0.7
-        for attribute, scores in response['attributeScores'].items():
-            if scores['summaryScore']['value'] > threshold:
-                return True, attribute
-        
-        return False, None
-    except Exception as e:
-        print(f"Error checking content: {e}")
-        return False, None
 
 # Global variables for recording state
 recording_thread = None
@@ -97,9 +60,10 @@ def check_query():
             }), 400
         
         return jsonify({'success': True, 'message': 'Query is safe to process'}), 200
-
+    
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
