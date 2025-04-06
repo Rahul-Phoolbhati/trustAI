@@ -2,5 +2,5 @@ services:
   - type: web
     name: trustAI-1
     env: python3.10
-    buildCommand: pip install -r requirements.txt
+    buildCommand: ./build.sh && pip install -r requirements.txt
     startCommand: python3 app.py 
