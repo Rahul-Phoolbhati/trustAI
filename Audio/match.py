@@ -1,10 +1,10 @@
 from scipy.spatial.distance import cosine
 import pickle
 import os
-from Audio.addAudioToPkl import extract_voice_embedding
+from Audio.addAudioToPkl import extract_features
 
 def match_voice(incoming_audio):
-    incoming_features = extract_voice_embedding(incoming_audio)
+    incoming_features = extract_features(incoming_audio)
     
     db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "voice_database.pkl")
     with open(db_path, "rb") as f:
